@@ -8,17 +8,17 @@ import (
 )
 
 /*получаем число со строки+смена позиции, где конец числа*/
-func getNumberFromString(s string, pos *int) string {
+func getNumberFromString(s string, pos int) (string, int) {
 	var number string
-	for ; *pos < len(s); *pos++ {
-		_, err := strconv.Atoi(string(s[*pos]))
+	for ; pos < len(s); pos++ {
+		_, err := strconv.Atoi(string(s[pos]))
 		if err != nil {
-			*pos--
+			pos--
 			break
 		}
-		number += string(s[*pos])
+		number += string(s[pos])
 	}
-	return number
+	return number, pos
 }
 
 /*очистка выражения, замена на более подхлдящие элементы для парсинга*/
@@ -57,7 +57,9 @@ func getReversePolishNotation(s string) []string {
 		_, err := strconv.Atoi(string(ch))
 		switch {
 		case err == nil:
-			res = append(res, getNumberFromString(s, &i))
+			num, newPos := getNumberFromString(s, i)
+			res = append(res, num)
+			i = newPos
 		case ch == '(':
 			st.Push(ch)
 		case ch == ')':
@@ -84,12 +86,17 @@ func getReversePolishNotation(s string) []string {
 	return res
 }
 
+/*ВАЖНО!!! использую, когда гарантированно, что можно распарсить*/
+func StrToFloat64(str string) float64 {
+	res, _ := strconv.ParseFloat(str, 64)
+	return res
+}
+
 /*вычисление польского выражения*/
 func CalculateExpression(s string) float64 {
 	polishNotation, numStack, topStack1, topStack2 := getReversePolishNotation(clean(s)), make([]float64, 0, 10), 0.0, 0.0
 	if len(polishNotation) <= 2 {
-		res, _ := strconv.ParseFloat(polishNotation[0], 64)
-		return res
+		return StrToFloat64(polishNotation[0])
 	}
 	for _, val := range polishNotation {
 		if v := val[0]; v == PLUS || v == MINUS || v == MUL || v == DIV || v == NEG {
@@ -115,8 +122,7 @@ func CalculateExpression(s string) float64 {
 			numStack = append(numStack, topStack1)
 			continue
 		}
-		num, _ := strconv.ParseFloat(val, 64)
-		numStack = append(numStack, num)
+		numStack = append(numStack, StrToFloat64(val))
 	}
 	return numStack[0]
 }
