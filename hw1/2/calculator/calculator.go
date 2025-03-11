@@ -6,6 +6,7 @@ import (
 	"strings"
 	"task2/stack"
 )
+
 /*получаем число со строки+смена позиции, где конец числа*/
 func getNumberFromString(s string, pos *int) string {
 	var number string
@@ -19,6 +20,7 @@ func getNumberFromString(s string, pos *int) string {
 	}
 	return number
 }
+
 /*очистка выражения, замена на более подхлдящие элементы для парсинга*/
 func clean(expression string) string {
 	addMult, cleanExpression := regexp.MustCompile("(\\d+)(\\()"), strings.Replace(expression, " ", "", -1)
@@ -26,17 +28,27 @@ func clean(expression string) string {
 	cleanExpression = addMult.ReplaceAllString(cleanExpression, "${1}*$2")
 	return cleanExpression
 }
+
+const (
+	PLUS  = '+'
+	MINUS = '-'
+	MUL   = '*'
+	DIV   = '/'
+	NEG   = '_'
+)
+
 /*определение приоритета исполняемых операций*/
 func PriorityCmp(b1, b2 byte) bool {
 	priorityMap := map[byte]int{
-		'+': 1,
-		'-': 1,
-		'*': 2,
-		'/': 2,
-		'_': 3,
+		PLUS:  1,
+		MINUS: 1,
+		MUL:   2,
+		DIV:   2,
+		NEG:   3,
 	}
 	return priorityMap[b1] >= priorityMap[b2]
 }
+
 /*алгоритм преобразования в польскую запись, посредством Дейкстры*/
 func getReversePolishNotation(s string) []string {
 	st, res := new(stack.Stack), make([]string, 0)
@@ -53,8 +65,12 @@ func getReversePolishNotation(s string) []string {
 				res = append(res, string(st.Pop()))
 			}
 			st.Pop()
-		case ch == '-' && (i == 0 || s[i-1] == '('): //negative number case-swap to _
-			ch = '_'
+		case ch == MINUS && (i == 0 || s[i-1] == '('): //negative number case-swap to _
+			ch = NEG
+			for !st.IsEmpty() && PriorityCmp(st.Top(), ch) {
+				res = append(res, string(st.Pop()))
+			}
+			st.Push(ch)
 		default:
 			for !st.IsEmpty() && PriorityCmp(st.Top(), ch) {
 				res = append(res, string(st.Pop()))
@@ -67,43 +83,40 @@ func getReversePolishNotation(s string) []string {
 	}
 	return res
 }
+
 /*вычисление польского выражения*/
 func CalculateExpression(s string) float64 {
-	polishNotation, nums, num1, num2 := getReversePolishNotation(clean(s)), make([]float64, 0, 10), 0.0, 0.0
+	polishNotation, numStack, topStack1, topStack2 := getReversePolishNotation(clean(s)), make([]float64, 0, 10), 0.0, 0.0
 	if len(polishNotation) <= 2 {
 		res, _ := strconv.ParseFloat(polishNotation[0], 64)
 		return res
 	}
 	for _, val := range polishNotation {
-		if val == "+" || val == "-" || val == "*" || val == "/" || val == "_" {
-			if val == "_" {
-				nums[len(nums)-1] = -nums[len(nums)-1]
+		if v := val[0]; v == PLUS || v == MINUS || v == MUL || v == DIV || v == NEG {
+			if v == NEG {
+				numStack[len(numStack)-1] = -numStack[len(numStack)-1]
 				continue
 			}
-			num2, nums = nums[len(nums)-1], nums[:len(nums)-1]
-			if len(nums) == 0 {
-				num1 = 0
-			} else {
-				num1 = nums[len(nums)-1]
-				nums = nums[:len(nums)-1]
+			topStack1, topStack2, numStack = 0, numStack[len(numStack)-1], numStack[:len(numStack)-1]
+			if len(numStack) > 0 {
+				topStack1 = numStack[len(numStack)-1]
+				numStack = numStack[:len(numStack)-1]
 			}
-			if val == "+" {
-				num1 += num2
+			switch v {
+			case PLUS:
+				topStack1 += topStack2
+			case MINUS:
+				topStack1 -= topStack2
+			case MUL:
+				topStack1 *= topStack2
+			case DIV:
+				topStack1 /= topStack2
 			}
-			if val == "-" {
-				num1 -= num2
-			}
-			if val == "*" {
-				num1 *= num2
-			}
-			if val == "/" {
-				num1 /= num2
-			}
-			nums = append(nums, num1)
+			numStack = append(numStack, topStack1)
 			continue
 		}
 		num, _ := strconv.ParseFloat(val, 64)
-		nums = append(nums, num)
+		numStack = append(numStack, num)
 	}
-	return nums[0]
+	return numStack[0]
 }
