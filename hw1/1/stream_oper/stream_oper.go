@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"os"
 )
+
+type Oper func(string) (*os.File, error)
+
 /*помощники в обработке потока*/
-func GetStream(defaultValue *os.File, numArg int, operation func(string) (*os.File, error)) (*os.File, error) {
+func GetStream(defaultValue *os.File, numArg int, operation Oper) (*os.File, error) {
 	var err error
 	stream, filename := defaultValue, flag.Arg(numArg)
 	if filename != "" {

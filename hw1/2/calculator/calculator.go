@@ -1,13 +1,14 @@
 package calculator
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 	"task2/stack"
 )
 
-/*получаем число со строки+смена позиции, где конец числа*/
+// получаем число со строки+смена позиции, где конец числа
 func getNumberFromString(s string, pos int) (string, int) {
 	var number string
 	for ; pos < len(s); pos++ {
@@ -21,7 +22,7 @@ func getNumberFromString(s string, pos int) (string, int) {
 	return number, pos
 }
 
-/*очистка выражения, замена на более подхлдящие элементы для парсинга*/
+// очистка выражения, замена на более подхлдящие элементы для парсинга
 func clean(expression string) string {
 	addMult, cleanExpression := regexp.MustCompile("(\\d+)(\\()"), strings.Replace(expression, " ", "", -1)
 	cleanExpression = strings.Replace(cleanExpression, ")(", ")*(", -1)
@@ -37,7 +38,7 @@ const (
 	NEG   = '_'
 )
 
-/*определение приоритета исполняемых операций*/
+// определение приоритета исполняемых операций
 func PriorityCmp(b1, b2 byte) bool {
 	priorityMap := map[byte]int{
 		PLUS:  1,
@@ -49,7 +50,7 @@ func PriorityCmp(b1, b2 byte) bool {
 	return priorityMap[b1] >= priorityMap[b2]
 }
 
-/*алгоритм преобразования в польскую запись, посредством Дейкстры*/
+// алгоритм преобразования в польскую запись, посредством Дейкстры
 func getReversePolishNotation(s string) []string {
 	st, res := new(stack.Stack), make([]string, 0)
 	for i := 0; i < len(s); i++ {
@@ -86,17 +87,21 @@ func getReversePolishNotation(s string) []string {
 	return res
 }
 
-/*ВАЖНО!!! использую, когда гарантированно, что можно распарсить*/
-func StrToFloat64(str string) float64 {
-	res, _ := strconv.ParseFloat(str, 64)
-	return res
+// ВАЖНО!!! использую, когда гарантированно, что можно распарсить
+func StrToFloat64(str string) (float64, error) {
+	res, err := strconv.ParseFloat(str, 64)
+	return res, err
 }
 
-/*вычисление польского выражения*/
-func CalculateExpression(s string) float64 {
+// вычисление польского выражения
+func CalculateExpression(s string) (float64, error) {
+	if s == "" {
+		return 0.0, fmt.Errorf("empty string")
+	}
 	polishNotation, numStack, topStack1, topStack2 := getReversePolishNotation(clean(s)), make([]float64, 0, 10), 0.0, 0.0
 	if len(polishNotation) <= 2 {
-		return StrToFloat64(polishNotation[0])
+		res, _ := StrToFloat64(polishNotation[0])
+		return res, nil
 	}
 	for _, val := range polishNotation {
 		if v := val[0]; v == PLUS || v == MINUS || v == MUL || v == DIV || v == NEG {
@@ -122,7 +127,8 @@ func CalculateExpression(s string) float64 {
 			numStack = append(numStack, topStack1)
 			continue
 		}
-		numStack = append(numStack, StrToFloat64(val))
+		num, _ := StrToFloat64(val)
+		numStack = append(numStack, num)
 	}
-	return numStack[0]
+	return numStack[0], nil
 }

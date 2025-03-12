@@ -15,8 +15,8 @@ type Options struct {
 	i  bool
 }
 
-func Init(options *Options) {
-	options.c, options.d, options.u, options.f, options.ch, options.i = false, false, false, 0, 0, false
+func Init() Options {
+	return Options{}
 }
 
 /*преобразования строк, помогающие работать с утилитой*/
@@ -52,11 +52,14 @@ func getString(strs []string, str string, options Options, count int) []string {
 	return strs
 }
 
-func Uniq(strs []string, options Options) []string {
+func Uniq(strs []string, options Options) ([]string, error) {
 	if len(strs) == 0 {
-		return make([]string, 0)
+		return make([]string, 0), nil
 	}
 	result, prev, count := make([]string, 0), strs[0], 1
+	if options.c && options.d || options.d && options.u || options.c && options.u {
+		return result, fmt.Errorf("bad flags")
+	}
 	for i := 1; i < len(strs); i++ {
 		prevCut, curCut := normal(prev, options), normal(strs[i], options)
 		if prevCut == curCut {
@@ -65,5 +68,5 @@ func Uniq(strs []string, options Options) []string {
 		}
 		result, count, prev = getString(result, prev, options, count), 1, strs[i]
 	}
-	return getString(result, prev, options, count)
+	return getString(result, prev, options, count), nil
 }

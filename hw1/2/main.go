@@ -8,5 +8,6 @@ import (
 func main() {
 	var expression string
 	fmt.Scan(&expression)
-	fmt.Printf("%.5f\n", calculator.CalculateExpression(expression))
+	res, _ := calculator.CalculateExpression(expression)
+	fmt.Printf("%.5f\n", res)
 }

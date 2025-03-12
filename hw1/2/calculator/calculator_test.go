@@ -2,6 +2,8 @@ package calculator
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 type testCalc struct {
@@ -40,9 +42,27 @@ func TestCalculateExpression(t *testing.T) {
 		},
 	}
 	for _, test := range testData {
-		answer := CalculateExpression(test.expression)
+		answer, _ := CalculateExpression(test.expression)
 		if answer != test.answer {
 			t.Errorf("calculateExpression(%s) => %f, want %f", test.expression, answer, test.answer)
 		}
+	}
+}
+
+var calcTestsNegative = []struct {
+	input  string
+	output float64
+}{
+	{
+		"",
+		0.0,
+	},
+}
+
+func TestNegative(t *testing.T) {
+	for _, tt := range calcTestsNegative {
+		result, err := CalculateExpression(tt.input)
+		require.Error(t, err)
+		require.Equal(t, tt.output, result)
 	}
 }
